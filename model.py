@@ -83,11 +83,14 @@ def final_result(query):
     return response
 
 
-# start_time = time.time()
+start_time = time.time()
 # result = final_result('¿Para quién es la salud mental?')
-# print(result)
-# print("--- %s seconds ---" % (time.time() - start_time))
-#chainlit code
+# result = final_result('¿Cuál es la diferencia entre el conocer y el comunicarse?')
+result = final_result('¿Qué es la inteligencia emocional?')
+# result = final_result('¿Cómo funcionan las emociones prohibidas en los niños?')
+print(result)
+print("--- %s seconds ---" % (time.time() - start_time))
+# chainlit code
 @cl.on_chat_start
 async def start():
     chain = qa_bot()
