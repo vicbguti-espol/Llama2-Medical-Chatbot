@@ -5,17 +5,30 @@ from langchain.vectorstores import FAISS
 from langchain.llms import CTransformers
 from langchain.chains import RetrievalQA
 import chainlit as cl
+from deep_translator import GoogleTranslator
+import time
+
 
 DB_FAISS_PATH = 'vectorstore/db_faiss'
 
-custom_prompt_template = """Use the following pieces of information to answer the user's question.
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
+# custom_prompt_template = """Use the following pieces of information to answer the user's question.
+# If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-Context: {context}
-Question: {question}
+# Context: {context}
+# Question: {question}
 
-Only return the helpful answer below and nothing else.
-Helpful answer:
+# Only return the helpful answer below and nothing else.
+# Helpful answer:
+# """
+
+custom_prompt_template = """Utilice la siguiente información para responder la pregunta del usuario.
+Si no sabe la respuesta, simplemente diga que no la sabe, no intente inventar una respuesta.
+
+Contexto: {context}
+Pregunta: {question}
+
+Solo devuelva la útil respuesta a continuación y nada más.
+Respuesta útil:
 """
 
 def set_custom_prompt():
@@ -49,11 +62,16 @@ def load_llm():
 
 #QA Model Function
 def qa_bot():
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",
+    # embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",
+    #                                    model_kwargs={'device': 'cpu'})
+    # embeddings = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-large",
+    #                                    model_kwargs={'device': 'cpu'})
+    embeddings = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-small",
                                        model_kwargs={'device': 'cpu'})
     db = FAISS.load_local(DB_FAISS_PATH, embeddings)
     llm = load_llm()
     qa_prompt = set_custom_prompt()
+    
     qa = retrieval_qa_chain(llm, qa_prompt, db)
 
     return qa
@@ -64,6 +82,11 @@ def final_result(query):
     response = qa_result({'query': query})
     return response
 
+
+# start_time = time.time()
+# result = final_result('¿Para quién es la salud mental?')
+# print(result)
+# print("--- %s seconds ---" % (time.time() - start_time))
 #chainlit code
 @cl.on_chat_start
 async def start():
@@ -82,8 +105,10 @@ async def main(message):
         stream_final_answer=True, answer_prefix_tokens=["FINAL", "ANSWER"]
     )
     cb.answer_reached = True
+    # message = GoogleTranslator(source='auto', target='en').translate(text=raw_message) # added line
     res = await chain.acall(message, callbacks=[cb])
     answer = res["result"]
+    # answer = GoogleTranslator(source='auto', target='es').translate(text=res["result"]) 
     sources = res["source_documents"]
 
     if sources:
